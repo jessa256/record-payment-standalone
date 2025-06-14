@@ -1,0 +1,32 @@
+{
+  "name": "record-payment-standalone",
+  "version": "1.0.0",
+  "description": "Standalone vendor payment recording component with vendor dropdown selection - based on payment-plan-component v3.1.2",
+  "main": "src/wwElement.vue",
+  "scripts": {
+    "serve": "weweb serve",
+    "build": "weweb build -- name=record-payment-standalone type=wwobject"
+  },
+  "keywords": [
+    "weweb",
+    "payment",
+    "vendor",
+    "component",
+    "standalone",
+    "dropdown",
+    "record-payment"
+  ],
+  "author": "Jessica Clark",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jessa256/record-payment-standalone.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Jessa256/record-payment-standalone/issues"
+  },
+  "homepage": "https://github.com/Jessa256/record-payment-standalone#readme",
+  "devDependencies": {
+    "@weweb/cli": "^3.8.13"
+  }
+}
