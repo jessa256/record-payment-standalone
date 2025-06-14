@@ -1,6 +1,6 @@
 {
   "name": "record-payment-standalone",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Standalone vendor payment recording component with vendor dropdown selection - based on payment-plan-component v3.1.2",
   "main": "src/wwElement.vue",
   "scripts": {

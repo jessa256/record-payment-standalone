@@ -1,6 +1,6 @@
 export default {
   editor: {
-    label: 'Record Payment Standalone v1.0.0',
+    label: 'Record Payment Standalone v1.0.1',
     icon: 'payment'
   },
   inherit: {

@@ -1,4 +1,4 @@
-# Record Payment Standalone v1.0.0
+# Record Payment Standalone v1.0.1
 
 A standalone WeWeb custom component for recording vendor payments with dropdown vendor selection. Based on the Payment Plan Component v3.1.2 but redesigned for independent use without parent component context.
 
@@ -20,6 +20,22 @@ A standalone WeWeb custom component for recording vendor payments with dropdown 
 - **Smart Payment Limits**: Payment amount cannot exceed remaining balance
 - **Real-time Calculations**: Amount remaining updates based on vendor selection
 - **Enhanced UX**: Visual indicators, error messages, and form validation
+
+## 🔄 Version History
+
+### v1.0.1 (June 2025): JavaScript Error Fix
+- **Fixed**: Resolved "Cannot read properties of undefined (reading 'action')" error
+- **Fixed**: `onVendorChange` method now properly uses v-model value instead of DOM event
+- **Improved**: More reliable vendor selection and data handling
+- **Enhanced**: Better error handling for vendor dropdown interactions
+
+### v1.0.0 (June 2025): Initial Release
+- **NEW**: Standalone vendor payment recording component
+- **NEW**: Required vendor dropdown populated from Supabase
+- **NEW**: Dynamic vendor information display
+- **NEW**: Complete form validation and error handling
+- **NEW**: Multiple payment types (immediate, historical, scheduled)
+- **NEW**: WeWeb event system integration
 
 ## 📋 Form Fields
 
@@ -325,7 +341,7 @@ record-payment-standalone/
 
 ## 🆚 Version Comparison
 
-| Feature | Payment Plan v3.1.2 | Record Payment v1.0.0 |
+| Feature | Payment Plan v3.1.2 | Record Payment v1.0.1 |
 |---------|---------------------|------------------------|
 | **Vendor Info** | Static grey box (from context) | Dynamic dropdown selection |
 | **Usage Context** | Inside vendor detail pages | Anywhere in application |
@@ -333,6 +349,7 @@ record-payment-standalone/
 | **Dependencies** | Parent component required | Fully standalone |
 | **Component Name** | `payment-plan-popup` | `record-payment-popup` |
 | **Default Button** | "Create Payment Plan" | "Record Payment" |
+| **JavaScript Errors** | Stable | Fixed in v1.0.1 |
 
 ## 🐛 Troubleshooting
 
@@ -350,6 +367,10 @@ record-payment-standalone/
 - Verify `payment-submitted` event handler is configured
 - Check Supabase insert permissions for `paymentPlans` table
 - Ensure all required fields are mapped correctly
+
+### **JavaScript Errors (Fixed in v1.0.1)**
+- If seeing "Cannot read properties of undefined" errors, upgrade to v1.0.1
+- The `onVendorChange` method has been completely rewritten for stability
 
 ### **Component Build Errors**
 ```bash
