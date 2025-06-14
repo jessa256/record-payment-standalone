@@ -15,7 +15,8 @@
 
         <div class="popup-content">
           <form @submit.prevent="submitPayment" class="payment-form">
-            <!-- Vendor Selection Dropdown -->
+            
+            <!-- Vendor Selection Dropdown - FIXED -->
             <div class="form-group">
               <label class="required-label">
                 {{ content.vendorLabel || 'Vendor' }}
@@ -26,92 +27,103 @@
                 required 
                 :class="{ 'error': validationErrors.vendor }"
                 @change="onVendorChange"
-                :style="validationErrors.vendor ? { borderColor: content.errorBorderColor || '#dc3545' } : {}"
-              >
-                <option value="">{{ content.vendorPlaceholder || 'Select a vendor' }}</option>
+                :style="validationErrors.vendor ? { borderColor: content.errorBorderColor || '#dc3545' } : {}">
+                
+                <option value="">{{ content.vendorPlaceholder || 'Select a vendor...' }}</option>
+                
                 <option 
                   v-for="vendor in vendorOptions" 
-                  :key="vendor.id" 
-                  :value="vendor.vendor_name"
-                >
+                  :key="vendor.id || vendor.vendor_name" 
+                  :value="vendor.vendor_name">
                   {{ vendor.vendor_name }}
+                  <span v-if="content.showAmountInDropdown && vendor.quoted_amount">
+                    - ${{ formatCurrency(vendor.quoted_amount) }}
+                  </span>
                 </option>
               </select>
-              <div v-if="validationErrors.vendor" class="error-message">{{ validationErrors.vendor }}</div>
+              
+              <div v-if="validationErrors.vendor" class="error-message" :style="{ color: content.errorTextColor || '#dc3545' }">
+                {{ validationErrors.vendor }}
+              </div>
             </div>
 
             <!-- Selected Vendor Information Display -->
             <div v-if="selectedVendorInfo" class="selected-vendor-info">
-              <div class="info-row">
-                <span class="label">Total Quote:</span>
-                <span class="value">${{ formatCurrency(selectedVendorInfo.quoted_amount || 0) }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Amount Remaining:</span>
-                <span class="value remaining-amount" 
-                      :class="{ 'fully-paid': calculatedAmountRemaining <= 0 }"
-                      :style="{ color: content.amountRemainingColor || '#28a745' }">
-                  ${{ formatCurrency(calculatedAmountRemaining) }}
-                </span>
-              </div>
+              <h4>{{ selectedVendorInfo.vendor_name }}</h4>
+              <p><strong>Total Amount:</strong> ${{ formatCurrency(selectedVendorInfo.quoted_amount) }}</p>
+              <p class="amount-remaining" :style="{ color: content.amountRemainingColor || '#28a745' }">
+                <strong>Amount Remaining:</strong> ${{ formatCurrency(calculatedAmountRemaining) }}
+              </p>
             </div>
 
             <!-- Invoice/Reference Number -->
             <div class="form-group">
-              <label>{{ content.invoiceLabel || 'Invoice/Reference Number' }}</label>
+              <label>{{ content.invoiceLabel || 'Invoice/Reference #' }}</label>
               <input 
-                v-model="paymentData.invoice" 
                 type="text" 
-                :placeholder="content.invoicePlaceholder || 'Enter invoice or reference number'"
-              />
+                v-model="paymentData.invoice" 
+                :placeholder="content.invoicePlaceholder || 'Optional invoice or reference number'">
             </div>
 
             <!-- Payment Amount -->
             <div class="form-group">
               <label class="required-label">
-                {{ content.paymentAmountLabel || 'Payment Amount' }}
+                {{ content.amountLabel || 'Payment Amount' }}
                 <span class="required-asterisk" :style="{ color: content.requiredFieldColor || '#dc3545' }">*</span>
               </label>
               <input 
-                v-model.number="paymentData.amount" 
                 type="number" 
                 step="0.01" 
-                min="0.01"
-                :max="calculatedAmountRemaining > 0 ? calculatedAmountRemaining : undefined"
-                :placeholder="content.amountRemainingPlaceholder || 'Enter payment amount'"
+                min="0.01" 
+                v-model="paymentData.amount" 
                 required 
                 :class="{ 'error': validationErrors.amount }"
                 :style="validationErrors.amount ? { borderColor: content.errorBorderColor || '#dc3545' } : {}"
-              />
-              <small class="helper-text">{{ content.amountRemainingHelper || 'Enter the amount you want to pay now' }}</small>
-              <div v-if="validationErrors.amount" class="error-message">{{ validationErrors.amount }}</div>
+                :placeholder="content.amountPlaceholder || 'Enter payment amount'">
+              
+              <div v-if="validationErrors.amount" class="error-message" :style="{ color: content.errorTextColor || '#dc3545' }">
+                {{ validationErrors.amount }}
+              </div>
+              
+              <div v-if="selectedVendorInfo && calculatedAmountRemaining > 0" class="helper-text" :style="{ color: content.helperTextColor || '#6c757d' }">
+                {{ content.amountHelperText || `Maximum: $${formatCurrency(calculatedAmountRemaining)}` }}
+              </div>
             </div>
 
             <!-- Payment Type -->
             <div class="form-group">
               <label class="required-label">
-                {{ content.paymentTypeLabel || 'Payment Type' }}
+                {{ content.typeLabel || 'Payment Type' }}
                 <span class="required-asterisk" :style="{ color: content.requiredFieldColor || '#dc3545' }">*</span>
               </label>
-              <select v-model="paymentData.type" required 
-                      :class="{ 'error': validationErrors.type }"
-                      :style="validationErrors.type ? { borderColor: content.errorBorderColor || '#dc3545' } : {}">
-                <option value="">Select payment type</option>
-                <option value="immediate">{{ content.immediatePaymentText || 'Immediate Payment' }}</option>
-                <option value="historical">{{ content.historicalPaymentText || 'Historical Payment' }}</option>
-                <option value="scheduled">{{ content.scheduledPaymentText || 'Scheduled Payment' }}</option>
+              <select 
+                v-model="paymentData.type" 
+                required 
+                :class="{ 'error': validationErrors.type }"
+                :style="validationErrors.type ? { borderColor: content.errorBorderColor || '#dc3545' } : {}">
+                
+                <option value="">{{ content.typePlaceholder || 'Select payment type...' }}</option>
+                <option value="immediate">{{ content.immediateLabel || 'Immediate (today)' }}</option>
+                <option value="historical">{{ content.historicalLabel || 'Historical (past date)' }}</option>
+                <option value="scheduled">{{ content.scheduledLabel || 'Scheduled (future date)' }}</option>
               </select>
-              <div v-if="validationErrors.type" class="error-message">{{ validationErrors.type }}</div>
+              
+              <div v-if="validationErrors.type" class="error-message" :style="{ color: content.errorTextColor || '#dc3545' }">
+                {{ validationErrors.type }}
+              </div>
             </div>
 
             <!-- Payment Date (for historical payments) -->
             <div v-if="paymentData.type === 'historical'" class="form-group">
               <label class="required-label">
-                {{ content.paymentDateLabel || 'Payment Date' }}
+                {{ content.dateLabel || 'Payment Date' }}
                 <span class="required-asterisk" :style="{ color: content.requiredFieldColor || '#dc3545' }">*</span>
               </label>
-              <input v-model="paymentData.date" type="date" :max="todayDate" required />
-              <small class="helper-text">{{ content.paymentDateHelper || 'When was this payment made?' }}</small>
+              <input 
+                type="date" 
+                v-model="paymentData.date" 
+                :max="todayDate" 
+                required>
             </div>
 
             <!-- Scheduled Date (for scheduled payments) -->
@@ -120,49 +132,57 @@
                 {{ content.scheduledDateLabel || 'Scheduled Date' }}
                 <span class="required-asterisk" :style="{ color: content.requiredFieldColor || '#dc3545' }">*</span>
               </label>
-              <input v-model="paymentData.scheduledDate" type="date" :min="todayDate" required />
-              <small class="helper-text">{{ content.scheduledDateHelper || 'When should this payment be processed?' }}</small>
+              <input 
+                type="date" 
+                v-model="paymentData.scheduledDate" 
+                :min="todayDate" 
+                required>
             </div>
 
             <!-- Payment Method -->
             <div class="form-group">
               <label class="required-label">
-                {{ content.paymentMethodLabel || 'Payment Method' }}
+                {{ content.methodLabel || 'Payment Method' }}
                 <span class="required-asterisk" :style="{ color: content.requiredFieldColor || '#dc3545' }">*</span>
               </label>
               <input 
-                v-model="paymentData.method" 
                 type="text" 
-                :placeholder="content.paymentMethodPlaceholder || 'e.g., Credit Card, Bank Transfer, Check'"
+                v-model="paymentData.method" 
                 required 
                 :class="{ 'error': validationErrors.method }"
                 :style="validationErrors.method ? { borderColor: content.errorBorderColor || '#dc3545' } : {}"
-              />
-              <div v-if="validationErrors.method" class="error-message">{{ validationErrors.method }}</div>
+                :placeholder="content.methodPlaceholder || 'e.g., Check #1234, ACH, Wire Transfer'">
+              
+              <div v-if="validationErrors.method" class="error-message" :style="{ color: content.errorTextColor || '#dc3545' }">
+                {{ validationErrors.method }}
+              </div>
             </div>
 
             <!-- Payment Reference -->
             <div class="form-group">
-              <label>{{ content.paymentReferenceLabel || 'Payment Reference' }}</label>
-              <input v-model="paymentData.reference" type="text" />
+              <label>{{ content.referenceLabel || 'Payment Reference' }}</label>
+              <input 
+                type="text" 
+                v-model="paymentData.reference" 
+                :placeholder="content.referencePlaceholder || 'Optional payment reference'">
             </div>
 
             <!-- Notes -->
             <div class="form-group">
-              <label>{{ content.notesLabel || 'Notes (Optional)' }}</label>
+              <label>{{ content.notesLabel || 'Notes' }}</label>
               <textarea 
                 v-model="paymentData.notes" 
-                :placeholder="content.notesPlaceholder || 'Add any additional notes about this payment'"
-                rows="3"
-              ></textarea>
+                rows="3" 
+                :placeholder="content.notesPlaceholder || 'Optional notes about this payment'">
+              </textarea>
             </div>
 
             <!-- Form Actions -->
             <div class="form-actions">
               <button type="button" @click="hidePopup" class="cancel-btn" :style="cancelButtonStyles">
-                {{ content.cancelButtonText || 'Cancel' }}
+                {{ content.cancelText || 'Cancel' }}
               </button>
-              <button type="submit" :disabled="isProcessing || !isFormValid" class="submit-btn" :style="submitButtonStyles">
+              <button type="submit" :disabled="!isFormValid || isProcessing" class="submit-btn" :style="submitButtonStyles">
                 {{ isProcessing ? (content.processingText || 'Processing...') : getSubmitButtonText() }}
               </button>
             </div>
@@ -204,9 +224,13 @@ export default {
     }
   },
   computed: {
-    // Get vendor options from WeWeb binding
+    // Get vendor options from WeWeb binding - SAFE
     vendorOptions: function() {
-      return this.content.vendorOptions || []
+      var options = this.content.vendorOptions || []
+      // Filter out any invalid vendor records
+      return options.filter(function(vendor) {
+        return vendor && vendor.vendor_name
+      })
     },
     
     todayDate: function() {
@@ -231,24 +255,43 @@ export default {
         borderRadius: this.content.buttonBorderRadius || '4px',
         padding: this.content.buttonPadding || '10px 20px',
         fontSize: this.content.buttonFontSize || '14px',
-        fontWeight: this.content.buttonFontWeight || '500'
+        fontWeight: this.content.buttonFontWeight || '500',
+        border: 'none',
+        cursor: 'pointer'
       }
     },
+    
     cancelButtonStyles: function() {
       return {
         backgroundColor: this.content.cancelButtonBackgroundColor || '#6c757d',
-        color: this.content.cancelButtonTextColor || '#ffffff'
+        color: this.content.cancelButtonTextColor || '#ffffff',
+        borderRadius: this.content.buttonBorderRadius || '4px',
+        padding: this.content.buttonPadding || '10px 20px',
+        fontSize: this.content.buttonFontSize || '14px',
+        border: 'none',
+        cursor: 'pointer'
       }
     },
+    
     submitButtonStyles: function() {
       return {
         backgroundColor: this.content.submitButtonBackgroundColor || '#28a745',
-        color: this.content.submitButtonTextColor || '#ffffff'
+        color: this.content.submitButtonTextColor || '#ffffff',
+        borderRadius: this.content.buttonBorderRadius || '4px',
+        padding: this.content.buttonPadding || '10px 20px',
+        fontSize: this.content.buttonFontSize || '14px',
+        border: 'none',
+        cursor: 'pointer'
       }
     },
+    
     closeButtonStyles: function() {
       return {
-        color: this.content.closeButtonColor || '#000000'
+        color: this.content.closeButtonColor || '#000000',
+        background: 'none',
+        border: 'none',
+        fontSize: '24px',
+        cursor: 'pointer'
       }
     }
   },
@@ -260,6 +303,7 @@ export default {
         event: {}
       })
     },
+    
     hidePopup: function() {
       this.isPopupVisible = false
       this.resetForm()
@@ -268,9 +312,11 @@ export default {
         event: {}
       })
     },
+    
     handleBackdropClick: function() {
       this.hidePopup()
     },
+    
     resetForm: function() {
       this.paymentData = {
         vendor: '',
@@ -289,34 +335,35 @@ export default {
       this.isProcessing = false
     },
     
+    // FIXED: Vendor selection method - no more DOM events
     onVendorChange: function() {
-      // Use the v-model value instead of accessing the DOM
-      var selectedVendor = this.paymentData.vendor
-      var selectedOption = this.vendorOptions.find(function(v) {
-        return v.vendor_name === selectedVendor
+      var selectedVendorName = this.paymentData.vendor
+      var selectedVendor = this.vendorOptions.find(function(vendor) {
+        return vendor.vendor_name === selectedVendorName
       })
       
-      if (selectedOption) {
-        // Set vendor info from the selected option
+      if (selectedVendor) {
         this.selectedVendorInfo = {
-          id: selectedOption.id,
-          vendor_name: selectedOption.vendor_name,
-          quoted_amount: parseFloat(selectedOption.quoted_amount) || 0
+          id: selectedVendor.id,
+          vendor_name: selectedVendor.vendor_name,
+          quoted_amount: parseFloat(selectedVendor.quoted_amount) || 0
         }
         
-        // Use the calculated amount remaining from WeWeb binding if available
+        // Use calculated amount remaining from WeWeb binding if available
         this.calculatedAmountRemaining = this.content.calculatedAmountRemaining || this.selectedVendorInfo.quoted_amount || 0
         
-        // Emit event for vendor selection
+        // Emit vendor selection event
         this.$emit('trigger-event', {
           name: 'vendor-selected',
           event: {
             vendorInfo: this.selectedVendorInfo,
-            vendorName: this.paymentData.vendor
+            vendorName: this.paymentData.vendor,
+            vendorId: this.selectedVendorInfo.id,
+            quotedAmount: this.selectedVendorInfo.quoted_amount
           }
         })
         
-        // Emit event for amount remaining update
+        // Emit amount remaining update event
         this.$emit('trigger-event', {
           name: 'amount-remaining-updated',
           event: {
@@ -325,7 +372,6 @@ export default {
           }
         })
       } else {
-        // Clear vendor info if no valid selection
         this.selectedVendorInfo = null
         this.calculatedAmountRemaining = 0
       }
@@ -334,7 +380,7 @@ export default {
     validateForm: function() {
       this.validationErrors = {}
       
-      if (!this.paymentData.vendor || this.paymentData.vendor.trim().length === 0) {
+      if (!this.paymentData.vendor) {
         this.validationErrors.vendor = 'Vendor selection is required'
       }
       
@@ -352,77 +398,74 @@ export default {
         this.validationErrors.method = 'Payment method is required'
       }
       
-      var hasErrors = Object.keys(this.validationErrors).length > 0
-      
-      if (hasErrors) {
-        this.$emit('trigger-event', {
-          name: 'validation-failed',
-          event: {
-            errors: this.validationErrors
-          }
-        })
-      }
-      
-      return !hasErrors
+      return Object.keys(this.validationErrors).length === 0
     },
     
     submitPayment: function() {
       var self = this
       
       if (!this.validateForm()) {
+        this.$emit('trigger-event', {
+          name: 'validation-failed',
+          event: {
+            errors: this.validationErrors
+          }
+        })
         return
       }
       
       this.isProcessing = true
       
-      try {
-        var submissionData = Object.assign({}, this.paymentData, {
-          vendorId: this.selectedVendorInfo ? this.selectedVendorInfo.id : null,
-          vendorName: this.paymentData.vendor,
-          totalAmount: this.selectedVendorInfo ? this.selectedVendorInfo.quoted_amount : 0,
-          amountRemaining: this.calculatedAmountRemaining,
-          timestamp: new Date().toISOString()
-        })
-
-        this.$emit('trigger-event', {
-          name: 'payment-submitted',
-          event: {
-            paymentData: submissionData,
-            vendorInfo: this.selectedVendorInfo,
-            paymentType: this.paymentData.type
-          }
-        })
-
-        // Simulate processing delay
-        setTimeout(function() {
-          self.hidePopup()
-          self.isProcessing = false
-        }, 1000)
-        
-      } catch (error) {
-        console.error('Error submitting payment:', error)
-        this.isProcessing = false
+      var paymentDate = this.paymentData.type === 'immediate' ? this.todayDate : 
+                       this.paymentData.type === 'historical' ? this.paymentData.date : 
+                       this.paymentData.scheduledDate
+      
+      var paymentRecord = {
+        vendor: this.paymentData.vendor,
+        vendorId: this.selectedVendorInfo ? this.selectedVendorInfo.id : null,
+        vendorName: this.paymentData.vendor,
+        invoice: this.paymentData.invoice,
+        amount: parseFloat(this.paymentData.amount),
+        type: this.paymentData.type,
+        date: paymentDate,
+        scheduledDate: this.paymentData.type === 'scheduled' ? this.paymentData.scheduledDate : null,
+        method: this.paymentData.method,
+        reference: this.paymentData.reference,
+        notes: this.paymentData.notes,
+        totalAmount: this.selectedVendorInfo ? this.selectedVendorInfo.quoted_amount : 0,
+        amountRemaining: Math.max(0, this.calculatedAmountRemaining - parseFloat(this.paymentData.amount)),
+        timestamp: new Date().toISOString()
       }
+      
+      this.$emit('trigger-event', {
+        name: 'payment-submitted',
+        event: {
+          paymentData: paymentRecord,
+          vendorInfo: this.selectedVendorInfo,
+          paymentType: this.paymentData.type
+        }
+      })
+      
+      setTimeout(function() {
+        self.isProcessing = false
+        self.hidePopup()
+      }, 1000)
     },
     
     getSubmitButtonText: function() {
-      switch (this.paymentData.type) {
-        case 'immediate':
-          return this.content.immediateSubmitText || 'Process Payment'
-        case 'historical':
-          return this.content.historicalSubmitText || 'Record Payment'
-        case 'scheduled':
-          return this.content.scheduledSubmitText || 'Schedule Payment'
-        default:
-          return 'Submit Payment'
+      if (this.paymentData.type === 'immediate') {
+        return this.content.submitImmediateText || 'Record Payment'
+      } else if (this.paymentData.type === 'historical') {
+        return this.content.submitHistoricalText || 'Record Historical Payment'
+      } else if (this.paymentData.type === 'scheduled') {
+        return this.content.submitScheduledText || 'Schedule Payment'
       }
+      return this.content.submitText || 'Submit Payment'
     },
     
     formatCurrency: function(amount) {
-      return new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }).format(amount || 0)
+      if (amount == null || isNaN(amount)) return '0.00'
+      return parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
     }
   }
 }
@@ -434,15 +477,11 @@ export default {
 }
 
 .record-payment-trigger-btn {
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .record-payment-trigger-btn:hover {
   opacity: 0.9;
-  transform: translateY(-1px);
 }
 
 .popup-overlay {
@@ -455,17 +494,17 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 1000;
 }
 
 .popup-container {
   background: white;
   border-radius: 8px;
-  max-width: 600px;
   width: 90%;
+  max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 .popup-header {
@@ -473,83 +512,44 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .popup-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #333;
+  font-weight: 600;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 5px;
-  line-height: 1;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .popup-content {
   padding: 20px;
 }
 
-.selected-vendor-info {
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 20px;
-  border-left: 4px solid #007bff;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.info-row:last-child {
-  margin-bottom: 0;
-}
-
-.info-row .label {
-  font-weight: 500;
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.info-row .value {
-  font-weight: 600;
-  color: #495057;
-  font-size: 0.9rem;
-}
-
-.remaining-amount {
-  color: #28a745;
-  font-weight: 700;
-}
-
-.remaining-amount.fully-paid {
-  color: #6c757d;
-}
-
 .payment-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 20px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .form-group label {
   font-weight: 500;
-  color: #495057;
-  font-size: 0.9rem;
+  color: #333;
+  font-size: 14px;
 }
 
 .required-label {
@@ -559,18 +559,17 @@ export default {
 }
 
 .required-asterisk {
-  color: #dc3545;
-  font-weight: 600;
+  font-weight: bold;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 10px;
+  padding: 10px 12px;
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 14px;
-  font-family: inherit;
+  transition: border-color 0.15s ease-in-out;
 }
 
 .form-group input:focus,
@@ -578,71 +577,77 @@ export default {
 .form-group textarea:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 .form-group input.error,
 .form-group select.error {
   border-color: #dc3545;
-  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
 }
 
 .error-message {
-  color: #dc3545;
-  font-size: 0.8rem;
-  margin-top: 2px;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .helper-text {
-  color: #6c757d;
-  font-size: 0.8rem;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.selected-vendor-info {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  border-left: 3px solid #007bff;
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.selected-vendor-info h4 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.selected-vendor-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.amount-remaining {
+  font-weight: 600;
 }
 
 .form-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: flex-end;
   margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid #eee;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
 }
 
 .cancel-btn,
 .submit-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
-.cancel-btn:hover {
-  opacity: 0.9;
-}
-
+.cancel-btn:hover,
 .submit-btn:hover:not(:disabled) {
   opacity: 0.9;
-  transform: translateY(-1px);
 }
 
 .submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
-  background-color: #6c757d !important;
 }
 
 @media (max-width: 768px) {
   .popup-container {
     width: 95%;
-    margin: 10px;
-  }
-  
-  .popup-header,
-  .popup-content {
-    padding: 15px;
+    margin: 20px;
   }
   
   .form-actions {
