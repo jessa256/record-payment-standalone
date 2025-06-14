@@ -33,6 +33,8 @@
                   v-for="vendor in vendorOptions" 
                   :key="vendor.id" 
                   :value="vendor.vendor_name"
+                  :data-quoted-amount="vendor.quoted_amount"
+                  :data-vendor-id="vendor.id"
                 >
                   {{ vendor.vendor_name }}
                 </option>
@@ -290,18 +292,14 @@ export default {
     },
     
     onVendorChange: function() {
-      // Use the v-model value instead of accessing the DOM
-      var selectedVendor = this.paymentData.vendor
-      var selectedOption = this.vendorOptions.find(function(v) {
-        return v.vendor_name === selectedVendor
-      })
+      var selectedOption = event.target.selectedOptions[0]
       
-      if (selectedOption) {
-        // Set vendor info from the selected option
+      if (selectedOption && selectedOption.value) {
+        // Get vendor info from the option data attributes
         this.selectedVendorInfo = {
-          id: selectedOption.id,
-          vendor_name: selectedOption.vendor_name,
-          quoted_amount: parseFloat(selectedOption.quoted_amount) || 0
+          id: selectedOption.getAttribute('data-vendor-id'),
+          vendor_name: selectedOption.value,
+          quoted_amount: parseFloat(selectedOption.getAttribute('data-quoted-amount')) || 0
         }
         
         // Use the calculated amount remaining from WeWeb binding if available
@@ -325,7 +323,6 @@ export default {
           }
         })
       } else {
-        // Clear vendor info if no valid selection
         this.selectedVendorInfo = null
         this.calculatedAmountRemaining = 0
       }
